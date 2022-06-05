@@ -17,5 +17,4 @@ class yaraWorker():
         strings = []
         matches = []
         self.matches = self.rules.match(data=file.read())
-        # print(self.matches[0])
-        return self.matches
+        return self.matches 
