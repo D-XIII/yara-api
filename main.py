@@ -22,8 +22,8 @@ def matches_json(matches):
             elem = match.strings[i]
             selem = elem[2].decode('UTF-8')
             
-            string = {"one":elem[1],"two":selem}
-            strings[i] = string
+            string = {"variable":elem[1],"value":selem}
+            strings[elem[0]] = string
         
         tags = {}
         for i in range(len(match.tags)):
