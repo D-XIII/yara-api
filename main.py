@@ -1,6 +1,6 @@
+from threading import Thread
 from yara_worker import yaraWorker
-from flask import request, jsonify
-from pymongo  import MongoClient
+from flask import request, Flask, send_file
 from dotenv import load_dotenv
 import requests
 import redis
@@ -8,7 +8,28 @@ import json
 import os
 
 #init api
-# app = flask.Flask(__name__)
+
+def api():
+    app = Flask("yara service")
+    @app.route('/downloadresult', methods=['GET'])
+    def downloadFile():
+        
+        scan_id = request.args.get('scanid')
+        print(scan_id)
+        if scan_id is not None:
+            download_url = f"{base_url}{scan_id}/download"
+            response = requests.get(download_url)
+            file = open(f"./result/{scan_id}.json", "rb")
+            # print(file)
+            return send_file(file, as_attachment=True,download_name=f"{scan_id}.json")
+        else:
+            return "No scan id"
+
+    app.run(debug=False)
+    
+Thread(target=api).start()
+
+
 
 #loading data from .env
 load_dotenv()
@@ -23,19 +44,15 @@ redis = redis.Redis(
     port= port,
     password= password)
 
-sub = redis.pubsub()
-sub.subscribe('new-scan')
-
-
-#init mongodb
-client = MongoClient(host="localhost", port=27017)
+sub = redis.pubsub(ignore_subscribe_messages=True)
+sub.subscribe('tmp-new-scan')
 
 #init yara worker
 yara = yaraWorker()
 
 i = 0
 
-def matches_json(matches):
+def matches_json(matches,scan_id):
     json_matches = {}
     for match in matches:
         if match.rule not in ['domain','Microsoft_Visual_Cpp_v60']:
@@ -45,8 +62,11 @@ def matches_json(matches):
                 try:
                     
                     selem = elem[2].decode('UTF-8')
-                    string = {"variable":elem[1],"value":selem}
-                    strings[elem[0]] = string
+                    string = {elem[0]:selem}
+                    
+                    if elem[1] in strings:
+                        strings[elem[1]].append(string)
+                    strings[elem[0]] = selem
                     tags = {}
                     for i in range(len(match.tags)):
                         elem = match.tags[i]
@@ -56,34 +76,28 @@ def matches_json(matches):
                                 
                     json_matches[match.rule] = match_json
                 except:
-                    print(elem[2])
+                    pass
              
-    with open('json_data.json', 'w') as outfile:
+    with open(f"./result/{scan_id}.json", 'w') as outfile:
         json.dump(json_matches, outfile)
-    return jsonify(json_matches)
+    return outfile
 
-for message in sub.listen():
-    print(++i)
-    # if message is not None and isinstance(message, dict):
-    # scan_id = message.get('scanid')
-    scan_id = 'c05cd1e35e88707da070cfbd93fd4f1f'
-    download_url = f"{base_url}{scan_id}/download"
-    response = requests.get(download_url)
-    file = open(scan_id, "wb").write(response.content)
-    # file.close()
-    file = open(scan_id, "rb")
-    # print(response.content)
-    result = yara.analyse(file)
+def main():
+    for message in sub.listen():
+        print(++i)
+        print(message)
 
-    presult = matches_json(result)
+        data = message.get('data').decode('UTF-8')
+        scan_id = data.split(':')[1][1:-2]
+        print("scanid : ", scan_id)
+        if scan_id is not None:
+            
+            download_url = f"{base_url}{scan_id}/download"
+            response = requests.get(download_url)
+            file = open(f"./file/{scan_id}", "wb").write(response.content)
+            file = open(f"./file/{scan_id}", "rb")
+            result = yara.analyse(file)
 
-# @app.route('/analyse', methods=['POST'])
-# def analyse():
-    
-#     uploaded_file = request.files['file']
-#     result = yara.analyse(uploaded_file)
+            presult = matches_json(result,scan_id)
 
-#     return matches_json(result)
-
-# if __name__ == "__main__":
-#  app.run(debug=True)
+main()
