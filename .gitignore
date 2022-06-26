@@ -1,0 +1,5 @@
+/yara-api-venv
+/rules/
+/file/*
+/result/*
+__pycache__/

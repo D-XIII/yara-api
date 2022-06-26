@@ -33,6 +33,7 @@ Thread(target=api).start()
 
 #loading data from .env
 load_dotenv()
+apiurl = os.getenv('API_URL')
 host = os.getenv('REDIS_HOST')
 port = os.getenv('REDIS_PORT')
 password = os.getenv('REDIS_PASSWORD')
@@ -99,5 +100,17 @@ def main():
             result = yara.analyse(file)
 
             presult = matches_json(result,scan_id)
+        
+        try:
+            url = f"http://{apiurl}:8080/result/yara"
+            myobj = {
+                'scanId': scan_id,
+                'filename': f"{scan_id}.json"
+                }
+
+            res = requests.post(url, data = myobj)
+            print(res)
+        except:
+            pass
 
 main()
