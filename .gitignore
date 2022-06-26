@@ -3,3 +3,4 @@
 /file/*
 /result/*
 __pycache__/
+.env
