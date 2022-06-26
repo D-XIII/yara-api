@@ -25,7 +25,7 @@ def api():
         else:
             return "No scan id"
 
-    app.run(debug=False)
+    app.run(debug=False,port=8877)
     
 Thread(target=api).start()
 
