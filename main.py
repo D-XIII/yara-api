@@ -46,7 +46,7 @@ redis = redis.Redis(
     password= password)
 
 sub = redis.pubsub(ignore_subscribe_messages=True)
-sub.subscribe('tmp-new-scan')
+sub.subscribe('new-scan')
 
 #init yara worker
 yara = yaraWorker()
