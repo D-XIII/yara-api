@@ -1,0 +1,19 @@
+version: "3.9"
+services:
+  yara:
+    build: .
+    image: scanlab/yara
+    ports:
+      - "8877:8877"
+      # - "19951:19951"
+      # - "8080:8080"
+    volumes:
+      - ./rules:/app/rules
+      - ./result:/app/result
+    environment:
+      - REDIS_HOST=redis-19951.c293.eu-central-1-1.ec2.cloud.redislabs.com
+      - REDIS_PORT=19951
+      - REDIS_PASSWORD=FrPbWwZxVBe63bRrR1Xl8zHF6xGEA1dl
+      - FILE_HOST=188.165.237.165
+      - FILE_PORT=8080
+      - API_URL=188.165.237.165
