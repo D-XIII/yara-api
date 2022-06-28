@@ -29,11 +29,12 @@ i = 0
 
 print(redis.ping())
 
-def save_json(data,location):
+
+def save_json(data, location):
     with open(location, 'w') as outfile:
         json.dump(data, outfile)
     return outfile
-    
+
 
 def matches_json(matches, scan_id):
     json_matches = {}
@@ -47,9 +48,9 @@ def matches_json(matches, scan_id):
                     if match.rule in summary_json.keys():
                         summary_json[match.rule] = summary_json[match.rule] + 1
                     else:
-                        
+
                         summary_json[match.rule] = 1
-                        
+
                     selem = elem[2].decode('UTF-8')
                     string = {elem[0]: selem}
 
@@ -85,19 +86,27 @@ def main():
                 response = requests.get(download_url)
                 file = open(f"../file/{scan_id}", "wb").write(response.content)
                 file = open(f"../file/{scan_id}", "rb")
-                
+
                 result = yara.analyse(file)
 
                 matches_json(result, scan_id)
 
                 url = f"http://{apiurl}:8080/scan/result/yara"
 
-                multipart_form_data = {
-                    'file': (f"{scan_id}.json", open(f"../result/{scan_id}.json", 'rb')),
-                    'summary': (f"{scan_id}.summary.json", open(f"../result/{scan_id}.summary.json", 'rb')),
-                    'scanid': (None, scan_id),
+                summary_json = json.load(
+                    open(f"../result/{scan_id}.summary.json", 'rb'))
+
+                payload = {
+                    'scanid': scan_id,
+                    'summary': summary_json,
                 }
-                res = requests.post(url, data=multipart_form_data)
+
+                files = {
+                    'file': (f"{scan_id}.json", open(f"../result/{scan_id}.json", 'rb')),
+                }
+
+                print(payload)
+                res = requests.post(url, data=payload, files=files)
                 print(res.content)
             except Exception as e:
                 print(e)
