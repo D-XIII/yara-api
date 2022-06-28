@@ -1,9 +1,11 @@
+from dotenv import load_dotenv
 from yara_worker import yaraWorker
 import requests
 import redis
 import json
 import os
 
+load_dotenv("../.env")
 apiurl = os.getenv('API_URL')
 host = os.getenv('REDIS_HOST')
 port = os.getenv('REDIS_PORT')
@@ -17,6 +19,7 @@ redis = redis.Redis(
     port=port,
     password=password)
 
+
 sub = redis.pubsub(ignore_subscribe_messages=True)
 sub.subscribe('new-scan')
 
@@ -26,16 +29,27 @@ i = 0
 
 print(redis.ping())
 
+def save_json(data,location):
+    with open(location, 'w') as outfile:
+        json.dump(data, outfile)
+    return outfile
+    
 
 def matches_json(matches, scan_id):
     json_matches = {}
+    summary_json = {}
     for match in matches:
         if match.rule not in ['domain', 'Microsoft_Visual_Cpp_v60']:
             strings = {}
             for i in range(len(match.strings)):
                 elem = match.strings[i]
                 try:
-
+                    if match.rule in summary_json.keys():
+                        summary_json[match.rule] = summary_json[match.rule] + 1
+                    else:
+                        
+                        summary_json[match.rule] = 1
+                        
                     selem = elem[2].decode('UTF-8')
                     string = {elem[0]: selem}
 
@@ -50,45 +64,43 @@ def matches_json(matches, scan_id):
                     match_json = {'tags': tags, 'strings': strings}
 
                     json_matches[match.rule] = match_json
-                except:
+                except Exception as e:
                     pass
-
-    with open(f"./result/{scan_id}.json", 'w') as outfile:
-        json.dump(json_matches, outfile)
-    return outfile
+    save_json(json_matches, f"../result/{scan_id}.json")
+    save_json(summary_json, f"../result/{scan_id}.summary.json")
 
 
 def main():
-    print("main")
+
     for message in sub.listen():
-        print(++i)
-        print(message)
+        # print(message)
 
         data = message.get('data').decode('UTF-8')
         scan_id = data.split(':')[1][1:-2]
         print("scanid : ", scan_id)
         if scan_id is not None:
+            try:
 
-            download_url = f"{base_url}{scan_id}/download"
-            response = requests.get(download_url)
-            file = open(f"./file/{scan_id}", "wb").write(response.content)
-            file = open(f"./file/{scan_id}", "rb")
-            result = yara.analyse(file)
+                download_url = f"{base_url}{scan_id}/download"
+                response = requests.get(download_url)
+                file = open(f"../file/{scan_id}", "wb").write(response.content)
+                file = open(f"../file/{scan_id}", "rb")
+                
+                result = yara.analyse(file)
 
-            presult = matches_json(result, scan_id)
+                matches_json(result, scan_id)
 
-        try:
-            url = f"http://{apiurl}:8080/scan/result/yara"
+                url = f"http://{apiurl}:8080/scan/result/yara"
 
-            multipart_form_data = {
-                'file': (f"{scan_id}.json", open(f"./result/{scan_id}.json", 'rb')),
-                'scanid': (None, scan_id),
-            }
-
-            res = requests.post(url, files=multipart_form_data)
-            print(res.content)
-        except:
-            pass
+                multipart_form_data = {
+                    'file': (f"{scan_id}.json", open(f"../result/{scan_id}.json", 'rb')),
+                    'summary': (f"{scan_id}.summary.json", open(f"../result/{scan_id}.summary.json", 'rb')),
+                    'scanid': (None, scan_id),
+                }
+                res = requests.post(url, data=multipart_form_data)
+                print(res.content)
+            except Exception as e:
+                print(e)
 
 
 main()

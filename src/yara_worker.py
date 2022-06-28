@@ -6,7 +6,7 @@ class yaraWorker():
     def __init__(self):
         self.filepaths = []
 
-        for file in glob.iglob('./rules/*/*.yar', recursive=True):
+        for file in glob.iglob('../rules/*/*.yar', recursive=True):
             self.filepaths.append(file)
             
         filepaths_dict = {file:file for file in self.filepaths}
