@@ -1,12 +1,20 @@
 FROM python:3.9
 
-LABEL name="yaraservice"
-LABEL version="1.0"
+RUN mkdir /app
+RUN mkdir /app/rules
+RUN mkdir /app/result
+RUN mkdir /app/file
 
-RUN git clone https://github.com/D-XIII/yara-api && cd yara-api
+WORKDIR /app
 
-EXPOSE 8877/tcp
+COPY /src .
+COPY requirements.txt .
+COPY entrypoint.sh .
 
-RUN pip install redis dotenv-python flask yara-python mongo 
+RUN pip install --no-cache-dir -r requirements.txt
 
-CMD [ "python", "main.py" ] 
+EXPOSE 8877
+EXPOSE 19951
+EXPOSE 8080
+
+ENTRYPOINT [ "python3", "-u", "./main.py" ]
