@@ -10,7 +10,9 @@ apiurl = os.getenv('API_URL')
 host = os.getenv('REDIS_HOST')
 port = os.getenv('REDIS_PORT')
 password = os.getenv('REDIS_PASSWORD')
-base_url = f"http://{os.getenv('FILE_HOST')}:{os.getenv('FILE_PORT')}/scan/"
+file_host = os.getenv('FILE_HOST')
+file_port = os.getenv('FILE_PORT')
+base_url = f"http://{file_host}:{file_port}/scan/"
 
 
 # redis init
