@@ -1,11 +1,12 @@
 from dotenv import load_dotenv
 from yara_worker import yaraWorker
+from os.path import join, dirname
 import requests
 import redis
 import json
 import os
 
-load_dotenv("../.env")
+load_dotenv(join(dirname(__file__), '.env'))
 apiurl = os.getenv('API_URL')
 host = os.getenv('REDIS_HOST')
 port = os.getenv('REDIS_PORT')
