@@ -70,8 +70,10 @@ def matches_json(matches, scan_id):
                     json_matches[match.rule] = match_json
                 except Exception as e:
                     pass
-    save_json(json_matches, f"../result/{scan_id}.json")
-    save_json(summary_json, f"../result/{scan_id}.summary.json")
+
+    save_json(json_matches, join(dirname(__file__), f"result/{scan_id}.json"))
+    save_json(summary_json, join(dirname(__file__),
+              f"result/{scan_id}.summary.json"))
 
 
 def main():
@@ -87,8 +89,10 @@ def main():
 
                 download_url = f"{base_url}{scan_id}/download"
                 response = requests.get(download_url)
-                file = open(f"../file/{scan_id}", "wb").write(response.content)
-                file = open(f"../file/{scan_id}", "rb")
+                file = open(
+                    join(dirname(__file__), f"file/{scan_id}"), "wb").write(response.content)
+                file = open(
+                    join(dirname(__file__), f"file/{scan_id}"), "rb")
 
                 result = yara.analyse(file)
 
@@ -97,7 +101,7 @@ def main():
                 url = f"http://{apiurl}:8080/scan/result/yara"
 
                 summary_json = json.load(
-                    open(f"../result/{scan_id}.summary.json", 'rb'))
+                    open(join(dirname(__file__), f"result/{scan_id}.summary.json"), 'rb'))
 
                 payload = {
                     'scanid': scan_id,
@@ -105,7 +109,7 @@ def main():
                 }
 
                 files = {
-                    'file': (f"{scan_id}.json", open(f"../result/{scan_id}.json", 'rb')),
+                    'file': (f"{scan_id}.json", open(join(dirname(__file__), f"result/{scan_id}.json"), 'rb')),
                 }
 
                 print(payload)
